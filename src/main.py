@@ -5,6 +5,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .config import settings
@@ -16,6 +17,15 @@ app = FastAPI(
     version=settings.app_version,
     description="A high-performance URL shortener API backed by Redis.",
     lifespan=lifespan,
+)
+
+# CORS middleware for frontend development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:8080"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(router, prefix="/api/v1")
