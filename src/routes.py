@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import status as http_status
 from redis import Redis, RedisError
 
 from .models import CreateUrlRequest, CreateUrlResponse, StatsResponse
@@ -68,10 +69,16 @@ async def resolve_url(
         svc = _get_service(req)
         record = svc.get(short_code)
     except RedisError as exc:
-        raise HTTPException(status_code=503, detail="Redis unavailable") from exc
+        raise HTTPException(
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Redis unavailable",
+        ) from exc
 
     if not record:
-        raise HTTPException(status_code=404, detail="Short URL not found")
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail="Short URL not found",
+        )
 
     # Increment click counter
     svc.increment_clicks(short_code)
@@ -85,7 +92,10 @@ async def resolve_url(
 
     response.headers["X-Original-Url"] = record.original_url
     response.headers["X-Clicks"] = str(record.clicks)
-    return Response(status_code=301, headers={"Location": record.original_url})
+    return Response(
+        status_code=http_status.HTTP_301_MOVED_PERMANENTLY,
+        headers={"Location": record.original_url},
+    )
 
 
 @router.get("/r/{short_code}/stats", response_model=StatsResponse)
